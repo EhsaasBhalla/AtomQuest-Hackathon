@@ -45,7 +45,6 @@
             </div>
           </div>
           <div style="text-align:right">
-            <button v-if="!g.is_shared" class="btn btn-ghost btn-sm" @click="deleteGoal(g.id)" title="Drop Goal" style="margin-bottom:8px; color:var(--danger)">🗑 Drop Goal</button>
             <div><div class="kpi-label">Target</div><div style="font-size:1.1rem;font-weight:700">{{ g.target_value || g.target_date || '0' }}</div></div>
           </div>
         </div>
@@ -88,7 +87,6 @@
             </div>
           </div>
           <div style="text-align:right">
-            <button v-if="!g.is_shared" class="btn btn-ghost btn-sm" @click="deleteGoal(g.id)" title="Drop Goal" style="color:var(--danger)">🗑 Drop Goal</button>
             <div style="margin-top: 8px;">
                <button class="btn btn-secondary btn-sm" @click="achievements[g.id].status='on_track'; saveAchievement(g)" :disabled="!isWindowOpen">Reopen</button>
             </div>

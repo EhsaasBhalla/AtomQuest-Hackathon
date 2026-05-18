@@ -135,7 +135,7 @@ def delete_goal(goal_id):
     sheet = goal.goal_sheet
     if sheet.employee_id != user.id:
         return jsonify({'error': 'Access denied'}), 403
-    if sheet.status not in ('draft', 'returned', 'approved'):
+    if sheet.status not in ('draft', 'returned'):
         return jsonify({'error': 'Cannot delete goals on a locked sheet'}), 400
 
     log_audit('goal', goal.id, 'deleted', user.id,
