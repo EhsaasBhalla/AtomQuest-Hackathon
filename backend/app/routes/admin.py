@@ -18,14 +18,8 @@ admin_bp = Blueprint('admin', __name__)
 @jwt_required()
 @role_required('admin')
 def get_cycles():
-    from app.extensions import cache
-    
-    @cache.cached(timeout=3600, key_prefix='cycles_list')
-    def _get_cycles():
-        cycles = Cycle.query.order_by(Cycle.year.desc()).all()
-        return jsonify({'cycles': [c.to_dict(include_windows=True) for c in cycles]}), 200
-        
-    return _get_cycles()
+    cycles = Cycle.query.order_by(Cycle.year.desc()).all()
+    return jsonify({'cycles': [c.to_dict(include_windows=True) for c in cycles]}), 200
 
 
 @admin_bp.route('/cycles', methods=['POST'])
