@@ -141,6 +141,7 @@ def create_user():
         email=data['email'].lower(), full_name=data['full_name'],
         role=data.get('role', 'employee'), department_id=data.get('department_id'),
         manager_id=data.get('manager_id'), designation=data.get('designation', ''),
+        is_active=True
     )
     user.set_password(data.get('password', 'password123'))
     db.session.add(user)

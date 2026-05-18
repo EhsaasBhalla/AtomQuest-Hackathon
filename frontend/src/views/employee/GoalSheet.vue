@@ -154,7 +154,7 @@ const unlockReason = ref('')
 import api from '../../services/api'
 async function requestUnlock() {
   try {
-    const { data } = await api.post(`/employee/sheet/${gs.currentSheet.id}/request-unlock`, { reason: unlockReason.value })
+    const { data } = await api.post(`/goals/sheet/${gs.currentSheet.id}/request-unlock`, { reason: unlockReason.value })
     gs.currentSheet = data.sheet
     showUnlockModal.value = false
     toast?.success('Unlock request submitted')
