@@ -64,7 +64,7 @@ const loading = ref(false)
 const creds = [
   { role: 'Admin', email: 'admin@company.com', pass: 'admin123' },
   { role: 'Manager', email: 'manager@company.com', pass: 'manager123' },
-  { role: 'Employee', email: 'employee1@company.com', pass: 'emp123' },
+  { role: 'Employee', email: 'employee@company.com', pass: 'emp123' },
 ]
 
 async function handleLogin() {
