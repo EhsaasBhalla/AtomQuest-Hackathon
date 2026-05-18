@@ -59,6 +59,7 @@ class GoalSheet(db.Model):
         }
         if include_goals:
             data['goals'] = [g.to_dict() for g in self.goals]
+            data['checkin_records'] = [c.to_dict() for c in self.checkin_records]
         return data
 
 

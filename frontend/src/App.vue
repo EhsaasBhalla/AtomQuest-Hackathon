@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-import { ref, computed, provide, onMounted, watch } from 'vue'
+import { ref, computed, provide, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import Sidebar from './components/common/Sidebar.vue'
 import Navbar from './components/common/Navbar.vue'
@@ -31,7 +31,19 @@ import ToastContainer from './components/common/ToastContainer.vue'
 
 const auth = useAuthStore()
 const isAuthenticated = computed(() => auth.isAuthenticated)
-const sidebarCollapsed = ref(false)
+
+// Initialize collapsed state based on screen size (auto-collapse below 1024px)
+const sidebarCollapsed = ref(window.innerWidth < 1024)
+
+function handleResize() {
+  // Only auto-collapse when shrinking. Allow manual expand if they really want it.
+  if (window.innerWidth < 1024) {
+    sidebarCollapsed.value = true
+  } else {
+    sidebarCollapsed.value = false
+  }
+}
+
 const currentQuarter = ref('q1')
 const toastRef = ref(null)
 
@@ -48,8 +60,13 @@ provide('currentQuarter', currentQuarter)
 
 // Dark mode - sync to documentElement
 onMounted(() => {
+  window.addEventListener('resize', handleResize)
   const saved = localStorage.getItem('theme') || 'light'
   document.documentElement.setAttribute('data-theme', saved)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 
 function handleSearch(query) {

@@ -19,6 +19,13 @@
         <div style="height:240px"><canvas ref="chartRef"></canvas></div>
       </div>
 
+      <!-- Manager Feedback -->
+      <div v-if="currentFeedback?.manager_comment" class="card" style="margin-bottom:20px; background: var(--bg-tertiary); border-left: 4px solid var(--accent);">
+        <h3 style="font-size:1rem; font-weight:600; margin-bottom:8px;">💬 Manager Feedback ({{ currentFeedback.manager_name }})</h3>
+        <p style="font-size:0.9rem; color:var(--text-secondary); white-space: pre-line; margin: 0;">{{ currentFeedback.manager_comment }}</p>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">Provided on: {{ new Date(currentFeedback.checkin_date).toLocaleDateString() }}</p>
+      </div>
+
       <div v-for="g in gs.goals" :key="g.id" class="card" style="margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px">
           <div>
@@ -61,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, nextTick, inject } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick, inject } from 'vue'
 import { useGoalStore } from '../../stores/goals'
 import { Chart, registerables } from 'chart.js'
 Chart.register(...registerables)
@@ -69,6 +76,12 @@ Chart.register(...registerables)
 const gs = useGoalStore()
 const toast = inject('toast')
 const selectedQ = ref('q1')
+
+const currentFeedback = computed(() => {
+  if (!gs.currentSheet || !gs.currentSheet.checkin_records) return null
+  return gs.currentSheet.checkin_records.find(c => c.quarter === selectedQ.value)
+})
+
 const achievements = reactive({})
 const chartRef = ref(null)
 let chartInst = null
