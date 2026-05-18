@@ -40,7 +40,7 @@ def seed_users():
     sales = Department.query.filter_by(name='Sales').first()
     hr = Department.query.filter_by(name='Human Resources').first()
 
-    # Admin
+    # Admin / HR — Priya Sharma
     admin = User(email='admin@company.com', full_name='Priya Sharma',
                  role='admin', department_id=hr.id, designation='HR Director',
                  avatar_color='#8b5cf6')
@@ -48,53 +48,28 @@ def seed_users():
     db.session.add(admin)
     db.session.flush()
 
-    # Managers
-    mgr1 = User(email='manager@company.com', full_name='Rajesh Kumar',
-                role='manager', department_id=eng.id, designation='Engineering Manager',
-                avatar_color='#0ea5e9')
-    mgr1.set_password('manager123')
-    db.session.add(mgr1)
-
-    mgr2 = User(email='manager2@company.com', full_name='Anita Desai',
-                role='manager', department_id=sales.id, designation='Sales Manager',
-                avatar_color='#f43f5e')
-    mgr2.set_password('manager123')
-    db.session.add(mgr2)
+    # Manager — Rajesh Kumar (Engineering)
+    mgr = User(email='manager@company.com', full_name='Rajesh Kumar',
+               role='manager', department_id=eng.id, designation='Engineering Manager',
+               avatar_color='#0ea5e9')
+    mgr.set_password('manager123')
+    db.session.add(mgr)
     db.session.flush()
 
-    # Employees under mgr1 (Engineering)
-    employees_eng = [
-        ('employee1@company.com', 'Amit Patel', '#10b981'),
-        ('employee2@company.com', 'Sneha Reddy', '#f59e0b'),
-        ('employee3@company.com', 'Vikram Singh', '#6366f1'),
-    ]
-    for email, name, color in employees_eng:
-        emp = User(email=email, full_name=name, role='employee',
-                   department_id=eng.id, manager_id=mgr1.id,
-                   designation='Software Engineer', avatar_color=color)
-        emp.set_password('emp123')
-        db.session.add(emp)
-
-    # Employees under mgr2 (Sales)
-    employees_sales = [
-        ('employee4@company.com', 'Meera Nair', '#ec4899'),
-        ('employee5@company.com', 'Arjun Gupta', '#14b8a6'),
-    ]
-    for email, name, color in employees_sales:
-        emp = User(email=email, full_name=name, role='employee',
-                   department_id=sales.id, manager_id=mgr2.id,
-                   designation='Sales Executive', avatar_color=color)
-        emp.set_password('emp123')
-        db.session.add(emp)
+    # Employee — Amit Patel (under Rajesh)
+    emp = User(email='employee@company.com', full_name='Amit Patel',
+               role='employee', department_id=eng.id, manager_id=mgr.id,
+               designation='Software Engineer', avatar_color='#10b981')
+    emp.set_password('emp123')
+    db.session.add(emp)
 
     db.session.commit()
 
     # Set department heads
-    eng.head_id = mgr1.id
-    sales.head_id = mgr2.id
+    eng.head_id = mgr.id
     hr.head_id = admin.id
     db.session.commit()
-    print("  [OK] Users created")
+    print("  [OK] Users created (3 demo accounts)")
 
 
 def seed_cycles():
@@ -104,8 +79,14 @@ def seed_cycles():
     db.session.add(cycle)
     db.session.flush()
 
+    # Windows per problem statement schedule:
+    # Goal Setting: May 1 – June 30
+    # Q1 Check-in: July (progress update)
+    # Q2 Check-in: October (progress update)
+    # Q3 Check-in: January (progress update)
+    # Q4 / Annual Review: March – April (final achievement capture)
     windows = [
-        ('goal_setting', 'Phase 1 - Goal Setting', '2026-05-01', '2026-06-30'),
+        ('goal_setting', 'Goal Setting', '2026-05-01', '2026-06-30'),
         ('q1_checkin', 'Q1 Check-in', '2026-07-01', '2026-07-31'),
         ('q2_checkin', 'Q2 Check-in', '2026-10-01', '2026-10-31'),
         ('q3_checkin', 'Q3 Check-in', '2027-01-01', '2027-01-31'),
@@ -140,94 +121,43 @@ def seed_escalation_rules():
 
 
 def seed_demo_goals():
-    """Create sample goal sheets in various states for demo."""
+    """Create sample goal sheets with realistic demo data for evaluation."""
     cycle = Cycle.query.filter_by(is_active=True).first()
     if not cycle:
         return
-    emp1 = User.query.filter_by(email='employee1@company.com').first()
-    emp2 = User.query.filter_by(email='employee2@company.com').first()
-    emp3 = User.query.filter_by(email='employee3@company.com').first()
+    emp = User.query.filter_by(email='employee@company.com').first()
     mgr = User.query.filter_by(email='manager@company.com').first()
-    if not emp1 or GoalSheet.query.filter_by(employee_id=emp1.id).first():
+    if not emp or GoalSheet.query.filter_by(employee_id=emp.id).first():
         return
 
-    # Employee 1: Approved sheet with Q1 achievements
-    sheet1 = GoalSheet(employee_id=emp1.id, cycle_id=cycle.id, status='approved',
-                       submitted_at=datetime(2026, 5, 15, tzinfo=timezone.utc),
-                       approved_at=datetime(2026, 5, 18, tzinfo=timezone.utc),
-                       approved_by=mgr.id)
-    db.session.add(sheet1)
+    # Employee: Approved sheet with 4 goals (weightage = 100%)
+    sheet = GoalSheet(employee_id=emp.id, cycle_id=cycle.id, status='approved',
+                      submitted_at=datetime(2026, 5, 15, tzinfo=timezone.utc),
+                      approved_at=datetime(2026, 5, 18, tzinfo=timezone.utc),
+                      approved_by=mgr.id)
+    db.session.add(sheet)
     db.session.flush()
 
-    goals1 = [
-        Goal(goal_sheet_id=sheet1.id, thrust_area='Revenue Growth',
-             title='Increase quarterly sales pipeline', description='Build and maintain sales pipeline worth 2x quota',
+    goals = [
+        Goal(goal_sheet_id=sheet.id, thrust_area='Revenue Growth',
+             title='Increase quarterly sales pipeline',
+             description='Build and maintain sales pipeline worth 2x of quarterly quota through outreach and relationship management',
              uom_type='numeric_min', target_value=200, weightage=30, order=0),
-        Goal(goal_sheet_id=sheet1.id, thrust_area='Product Quality',
-             title='Reduce critical bugs by 40%', description='Identify and fix critical bugs in production',
+        Goal(goal_sheet_id=sheet.id, thrust_area='Product Quality',
+             title='Reduce critical production bugs by 40%',
+             description='Identify, triage, and fix critical P1/P2 bugs reported by customers in the production environment',
              uom_type='percent_max', target_value=40, weightage=25, order=1),
-        Goal(goal_sheet_id=sheet1.id, thrust_area='Innovation',
-             title='Deliver AI-powered feature module', description='Design and ship the ML recommendation engine',
+        Goal(goal_sheet_id=sheet.id, thrust_area='Innovation',
+             title='Deliver AI-powered recommendation module',
+             description='Design, develop, and ship the ML-based recommendation engine for the platform by end of year',
              uom_type='timeline', target_date='2026-12-31', weightage=25, order=2),
-        Goal(goal_sheet_id=sheet1.id, thrust_area='Operational Excellence',
-             title='Zero production incidents', description='Maintain zero P1 incidents in production',
+        Goal(goal_sheet_id=sheet.id, thrust_area='Operational Excellence',
+             title='Maintain zero P1 production incidents',
+             description='Ensure zero critical production incidents through proactive monitoring and code reviews',
              uom_type='zero', target_value=0, weightage=20, order=3),
     ]
-    db.session.add_all(goals1)
+    db.session.add_all(goals)
     db.session.flush()
-
-    # Add Q1 achievements for emp1
-    achievements = [
-        QuarterlyAchievement(goal_id=goals1[0].id, quarter='q1', cycle_id=cycle.id,
-                             planned_target=200, actual_achievement=165, status='on_track', computed_score=82.5),
-        QuarterlyAchievement(goal_id=goals1[1].id, quarter='q1', cycle_id=cycle.id,
-                             planned_target=40, actual_achievement=28, status='on_track', computed_score=70.0),
-        QuarterlyAchievement(goal_id=goals1[2].id, quarter='q1', cycle_id=cycle.id,
-                             planned_target=None, actual_achievement=None, status='on_track', computed_score=None),
-        QuarterlyAchievement(goal_id=goals1[3].id, quarter='q1', cycle_id=cycle.id,
-                             planned_target=0, actual_achievement=0, status='completed', computed_score=100.0),
-    ]
-    db.session.add_all(achievements)
-
-    # Add check-in record for emp1 Q1
-    checkin1 = CheckinRecord(goal_sheet_id=sheet1.id, quarter='q1', manager_id=mgr.id,
-                             manager_comment='Good progress on sales pipeline. Bug reduction needs acceleration. Keep up the momentum on the AI module.',
-                             checkin_date=datetime(2026, 7, 20, tzinfo=timezone.utc))
-    db.session.add(checkin1)
-
-    # Employee 2: Submitted (pending approval)
-    sheet2 = GoalSheet(employee_id=emp2.id, cycle_id=cycle.id, status='submitted',
-                       submitted_at=datetime(2026, 5, 20, tzinfo=timezone.utc))
-    db.session.add(sheet2)
-    db.session.flush()
-
-    goals2 = [
-        Goal(goal_sheet_id=sheet2.id, thrust_area='Customer Satisfaction',
-             title='Achieve NPS score of 85+', description='Improve customer satisfaction through better support',
-             uom_type='numeric_min', target_value=85, weightage=35, order=0),
-        Goal(goal_sheet_id=sheet2.id, thrust_area='Revenue Growth',
-             title='Onboard 50 enterprise clients', description='Close deals with enterprise-tier clients',
-             uom_type='numeric_min', target_value=50, weightage=35, order=1),
-        Goal(goal_sheet_id=sheet2.id, thrust_area='Operational Excellence',
-             title='Complete compliance training', description='100% team compliance training completion',
-             uom_type='percent_min', target_value=100, weightage=30, order=2),
-    ]
-    db.session.add_all(goals2)
-
-    # Employee 3: Draft
-    sheet3 = GoalSheet(employee_id=emp3.id, cycle_id=cycle.id, status='draft')
-    db.session.add(sheet3)
-    db.session.flush()
-
-    goals3 = [
-        Goal(goal_sheet_id=sheet3.id, thrust_area='Innovation',
-             title='Launch internal developer portal', description='Build and launch a self-service dev portal',
-             uom_type='timeline', target_date='2026-09-30', weightage=40, order=0),
-        Goal(goal_sheet_id=sheet3.id, thrust_area='Product Quality',
-             title='Improve test coverage to 90%', description='Increase unit test coverage across all modules',
-             uom_type='percent_min', target_value=90, weightage=30, order=1),
-    ]
-    db.session.add_all(goals3)
 
     db.session.commit()
-    print("  [OK] Demo goal sheets created")
+    print("  [OK] Demo goal sheet created for employee")

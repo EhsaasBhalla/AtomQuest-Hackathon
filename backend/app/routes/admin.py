@@ -41,7 +41,7 @@ def create_cycle():
     db.session.flush()
 
     default_windows = [
-        ('goal_setting', 'Goal Setting', f"{data['year']}-05-01", f"{data['year']}-05-31"),
+        ('goal_setting', 'Goal Setting', f"{data['year']}-05-01", f"{data['year']}-06-30"),
         ('q1_checkin', 'Q1 Check-in', f"{data['year']}-07-01", f"{data['year']}-07-31"),
         ('q2_checkin', 'Q2 Check-in', f"{data['year']}-10-01", f"{data['year']}-10-31"),
         ('q3_checkin', 'Q3 Check-in', f"{data['year']+1}-01-01", f"{data['year']+1}-01-31"),
@@ -89,6 +89,26 @@ def update_windows(cycle_id):
     db.session.commit()
     cycle = Cycle.query.get(cycle_id)
     return jsonify({'cycle': cycle.to_dict(include_windows=True)}), 200
+
+
+@admin_bp.route('/cycles/<int:cycle_id>', methods=['DELETE'])
+@jwt_required()
+@role_required('admin')
+def delete_cycle(cycle_id):
+    user = get_current_user()
+    cycle = Cycle.query.get_or_404(cycle_id)
+    if cycle.is_active:
+        return jsonify({'error': 'Cannot delete the active cycle. Deactivate it first.'}), 400
+    # Check if any goal sheets exist for this cycle
+    sheet_count = GoalSheet.query.filter_by(cycle_id=cycle_id).count()
+    if sheet_count > 0:
+        return jsonify({'error': f'Cannot delete cycle with {sheet_count} linked goal sheets.'}), 400
+    cycle_name = cycle.name
+    db.session.delete(cycle)
+    db.session.commit()
+    log_audit('cycle', cycle_id, 'deleted', user.id, description=f'Cycle "{cycle_name}" deleted')
+    db.session.commit()
+    return jsonify({'message': f'Cycle "{cycle_name}" deleted'}), 200
 
 
 # --- User Management ---

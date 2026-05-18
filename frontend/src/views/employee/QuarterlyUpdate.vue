@@ -32,7 +32,9 @@
         <p style="color: var(--text-secondary); font-size: 0.9rem;">The {{ selectedQ.toUpperCase() }} check-in window is not currently open. You cannot save achievements right now.</p>
       </div>
 
-      <div v-for="g in gs.goals" :key="g.id" class="card" style="margin-bottom:16px">
+      <!-- Active Goals -->
+      <h3 v-if="activeGoals.length" style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-primary);">Active Goals</h3>
+      <div v-for="g in activeGoals" :key="g.id" class="card" style="margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px">
           <div>
             <h3 style="font-size:1rem;font-weight:600">{{ g.title }}</h3>
@@ -42,7 +44,10 @@
               <span class="badge badge-accent">{{ uomLabel(g.uom_type) }}</span>
             </div>
           </div>
-          <div style="text-align:right"><div class="kpi-label">Target</div><div style="font-size:1.1rem;font-weight:700">{{ g.target_value || g.target_date || '0' }}</div></div>
+          <div style="text-align:right">
+            <button v-if="!g.is_shared" class="btn btn-ghost btn-sm" @click="deleteGoal(g.id)" title="Drop Goal" style="margin-bottom:8px; color:var(--danger)">🗑 Drop Goal</button>
+            <div><div class="kpi-label">Target</div><div style="font-size:1.1rem;font-weight:700">{{ g.target_value || g.target_date || '0' }}</div></div>
+          </div>
         </div>
         <div v-if="achievements[g.id]" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:end">
           <div class="form-group" style="margin:0" v-if="g.uom_type !== 'timeline'">
@@ -67,6 +72,27 @@
             <span style="font-size:0.85rem;font-weight:600">{{ getScore(g) }}%</span>
           </div>
           <div class="progress-bar"><div class="progress-fill" :class="scoreClass(getScore(g))" :style="{width:getScore(g)+'%'}"></div></div>
+        </div>
+      </div>
+
+      <!-- Completed Goals -->
+      <h3 v-if="completedGoals.length" style="margin-top: 30px; margin-bottom: 12px; font-size: 1.1rem; color: var(--success);">✅ Completed Goals</h3>
+      <div v-for="g in completedGoals" :key="'comp-'+g.id" class="card" style="margin-bottom:16px; border-left: 4px solid var(--success); opacity: 0.9;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <h3 style="font-size:1rem;font-weight:600; text-decoration: line-through; color: var(--text-secondary)">{{ g.title }}</h3>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <span class="badge badge-success">Completed</span>
+              <span class="badge badge-info">{{ g.weightage }}%</span>
+              <span class="badge badge-default">Score: {{ getScore(g) }}%</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <button v-if="!g.is_shared" class="btn btn-ghost btn-sm" @click="deleteGoal(g.id)" title="Drop Goal" style="color:var(--danger)">🗑 Drop Goal</button>
+            <div style="margin-top: 8px;">
+               <button class="btn btn-secondary btn-sm" @click="achievements[g.id].status='on_track'; saveAchievement(g)" :disabled="!isWindowOpen">Reopen</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -94,6 +120,14 @@ const isWindowOpen = computed(() => {
   const phaseName = phaseMap[selectedQ.value]
   const win = gs.windows.find(w => w.phase === phaseName)
   return win ? win.is_open : false
+})
+
+const activeGoals = computed(() => {
+  return gs.goals.filter(g => achievements[g.id]?.status !== 'completed')
+})
+
+const completedGoals = computed(() => {
+  return gs.goals.filter(g => achievements[g.id]?.status === 'completed')
 })
 
 const achievements = reactive({})
@@ -149,5 +183,16 @@ async function saveAchievement(g) {
     await gs.fetchSheet(); initAchievements(); nextTick(() => renderChart())
     toast?.success('Achievement saved!')
   } catch(e) { toast?.error(e.response?.data?.error || 'Failed to save') }
+}
+
+async function deleteGoal(id) {
+  if (!confirm("Are you sure you want to delete this goal? This action cannot be undone.")) return;
+  try {
+    await gs.deleteGoal(id)
+    initAchievements(); nextTick(() => renderChart())
+    toast?.success('Goal deleted successfully')
+  } catch(e) {
+    toast?.error(e.response?.data?.error || 'Failed to delete goal')
+  }
 }
 </script>
