@@ -18,7 +18,9 @@
           <option value="submitted">Submitted</option>
           <option value="approved">Approved</option>
           <option value="returned">Returned</option>
-          <option value="unlocked">Unlocked</option>
+          <option value="unlock_requested">Unlock Requested</option>
+          <option value="unlock_accepted">Unlock Accepted</option>
+          <option value="unlock_rejected">Unlock Rejected</option>
           <option value="deleted">Deleted</option>
         </select>
       </div>

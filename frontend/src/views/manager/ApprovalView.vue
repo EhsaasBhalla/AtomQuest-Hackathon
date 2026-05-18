@@ -22,6 +22,17 @@
     <div v-if="loading" class="card"><div class="skeleton skeleton-card"></div></div>
 
     <div v-else-if="sheet">
+      <!-- Unlock Request Alert -->
+      <div v-if="sheet.unlock_requested" class="card" style="margin-bottom:20px; border-left:4px solid var(--info); background:var(--bg-tertiary)">
+        <div style="display:flex; justify-content:space-between; align-items:start">
+          <div>
+            <h3 style="color:var(--info); margin-bottom:8px">🔓 Goal Unlock Request</h3>
+            <p style="font-size:0.9rem; color:var(--text-secondary)"><strong>Reason:</strong> {{ sheet.unlock_reason }}</p>
+          </div>
+          <button class="btn btn-primary btn-sm" @click="showResolveUnlockModal = true">Review Request</button>
+        </div>
+      </div>
+
       <div class="card" style="margin-bottom:20px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="display:flex;gap:12px;align-items:center">
@@ -82,6 +93,24 @@
           <div class="form-group"><label class="form-label">Reason / Comments</label><textarea v-model="returnComment" class="form-textarea" rows="4" placeholder="Explain what needs to be changed..."></textarea></div>
         </div>
         <div class="modal-footer"><button class="btn btn-secondary" @click="showReturnModal = false">Cancel</button><button class="btn btn-danger" @click="returnSheet">Return Sheet</button></div>
+      </div>
+    </div>
+
+    <!-- Resolve Unlock Modal -->
+    <div v-if="showResolveUnlockModal" class="modal-overlay" @click.self="showResolveUnlockModal = false">
+      <div class="modal">
+        <div class="modal-header"><h3>Review Unlock Request</h3><button class="btn btn-ghost btn-sm" @click="showResolveUnlockModal = false">✕</button></div>
+        <div class="modal-body">
+          <p style="font-size:0.9rem;margin-bottom:12px"><strong>Employee Reason:</strong> {{ sheet.unlock_reason }}</p>
+          <div class="form-group">
+            <label class="form-label">Manager Feedback</label>
+            <textarea v-model="unlockFeedback" class="form-input" rows="3" placeholder="Provide feedback for your decision..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content:space-between">
+          <button class="btn btn-danger" @click="resolveUnlock('reject')" :disabled="!unlockFeedback.trim()">Reject Request</button>
+          <button class="btn btn-success" @click="resolveUnlock('accept')" :disabled="!unlockFeedback.trim()">Approve & Unlock</button>
+        </div>
       </div>
     </div>
   </div>
@@ -145,6 +174,21 @@ async function returnSheet() {
     toast?.success('Goal sheet returned for rework')
     router.push('/team')
   } catch(e) { toast?.error(e.response?.data?.error || 'Failed') }
+}
+
+const showResolveUnlockModal = ref(false)
+const unlockFeedback = ref('')
+
+async function resolveUnlock(action) {
+  try {
+    const { data } = await api.post(`/manager/team/${route.params.employeeId}/sheet/resolve-unlock`, {
+      action,
+      feedback: unlockFeedback.value
+    })
+    sheet.value = data.sheet
+    showResolveUnlockModal.value = false
+    toast?.success(`Unlock request ${action}ed`)
+  } catch(e) { toast?.error(e.response?.data?.error || 'Failed to resolve request') }
 }
 
 async function unlockSheet() {

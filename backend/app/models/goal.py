@@ -14,6 +14,9 @@ class GoalSheet(db.Model):
     approved_at = db.Column(db.DateTime, nullable=True)
     approved_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     return_comment = db.Column(db.Text, nullable=True)
+    unlock_requested = db.Column(db.Boolean, default=False)
+    unlock_reason = db.Column(db.Text, nullable=True)
+    unlock_feedback = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))
@@ -47,6 +50,9 @@ class GoalSheet(db.Model):
             'employee_designation': self.employee.designation if self.employee else None,
             'cycle_id': self.cycle_id,
             'status': self.status,
+            'unlock_requested': self.unlock_requested,
+            'unlock_reason': self.unlock_reason,
+            'unlock_feedback': self.unlock_feedback,
             'total_weightage': self.total_weightage,
             'goal_count': self.goal_count,
             'submitted_at': self.submitted_at.isoformat() if self.submitted_at else None,

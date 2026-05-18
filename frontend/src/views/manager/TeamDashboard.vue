@@ -49,7 +49,10 @@
               </div>
             </td>
             <td>{{ m.department_name || '—' }}</td>
-            <td><span class="badge badge-dot" :class="statusBadge(m.goal_sheet_status)">{{ statusLabel(m.goal_sheet_status) }}</span></td>
+            <td>
+              <span class="badge badge-dot" :class="statusBadge(m.goal_sheet_status)">{{ statusLabel(m.goal_sheet_status) }}</span>
+              <span v-if="m.goal_sheet?.unlock_requested" class="badge badge-info" style="margin-left:8px;font-size:0.7rem">🔓 Unlock Requested</span>
+            </td>
             <td>{{ m.goal_sheet?.goal_count || 0 }}</td>
             <td>
               <div style="display:flex;gap:4px">

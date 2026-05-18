@@ -61,6 +61,41 @@ def get_employee_sheet(employee_id):
     }), 200
 
 
+@manager_bp.route('/team/<int:employee_id>/sheet/resolve-unlock', methods=['POST'])
+@jwt_required()
+@role_required('manager', 'admin')
+def resolve_unlock(employee_id):
+    user = get_current_user()
+    data = request.get_json()
+    action = data.get('action') # 'accept' or 'reject'
+    feedback = data.get('feedback', '')
+    
+    cycle_id = data.get('cycle_id')
+    if not cycle_id:
+        from app.models.cycle import Cycle
+        cycle = Cycle.query.filter_by(is_active=True).first()
+        cycle_id = cycle.id if cycle else None
+
+    sheet = GoalSheet.query.filter_by(employee_id=employee_id, cycle_id=cycle_id).first()
+    if not sheet or not sheet.unlock_requested:
+        return jsonify({'error': 'No pending unlock request found'}), 404
+        
+    if action == 'accept':
+        sheet.status = 'draft'
+        sheet.unlock_requested = False
+        sheet.unlock_feedback = feedback
+        log_audit('goal_sheet', sheet.id, 'unlock_accepted', user.id, description='Unlock request approved')
+    elif action == 'reject':
+        sheet.unlock_requested = False
+        sheet.unlock_feedback = feedback
+        log_audit('goal_sheet', sheet.id, 'unlock_rejected', user.id, description='Unlock request rejected')
+    else:
+        return jsonify({'error': 'Invalid action'}), 400
+        
+    db.session.commit()
+    return jsonify({'message': f'Unlock request {action}ed', 'sheet': sheet.to_dict()}), 200
+
+
 @manager_bp.route('/team/<int:employee_id>/goals/<int:goal_id>', methods=['PUT'])
 @jwt_required()
 @role_required('manager', 'admin')

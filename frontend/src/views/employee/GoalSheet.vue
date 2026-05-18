@@ -8,7 +8,18 @@
       <div style="display:flex;gap:8px">
         <router-link v-if="canEdit" to="/goals/new" class="btn btn-primary">➕ Add Goal</router-link>
         <button v-if="canSubmit" class="btn btn-success" @click="submitSheet">🚀 Submit for Approval</button>
+        <button v-if="gs.sheetStatus === 'approved' && isGoalSettingOpen && !gs.currentSheet.unlock_requested" class="btn btn-secondary" @click="showUnlockModal = true">🔓 Request Changes</button>
       </div>
+    </div>
+
+    <!-- Unlock Request Feedback -->
+    <div v-if="gs.currentSheet?.unlock_requested" class="card" style="margin-bottom:20px;border-left:3px solid var(--info)">
+      <strong style="color:var(--info)">🔓 Unlock Requested</strong>
+      <p style="margin-top:6px;color:var(--text-secondary)">You have requested to change your goals. Waiting for manager approval.</p>
+    </div>
+    <div v-if="gs.currentSheet?.unlock_feedback && !gs.currentSheet?.unlock_requested" class="card" style="margin-bottom:20px;border-left:3px solid var(--accent)">
+      <strong style="color:var(--accent)">💬 Manager Feedback (Goal Unlock)</strong>
+      <p style="margin-top:6px;color:var(--text-secondary)">{{ gs.currentSheet.unlock_feedback }}</p>
     </div>
 
     <div class="card" style="margin-bottom:20px">
@@ -81,6 +92,24 @@
       <p>Start building your goal sheet for this cycle</p>
       <router-link to="/goals/new" class="btn btn-primary" style="margin-top:16px">Create First Goal</router-link>
     </div>
+
+    <!-- Unlock Request Modal -->
+    <div v-if="showUnlockModal" class="modal-overlay" @click.self="showUnlockModal = false">
+      <div class="modal">
+        <div class="modal-header"><h3>Request Goal Changes</h3><button class="btn btn-ghost btn-sm" @click="showUnlockModal = false">✕</button></div>
+        <div class="modal-body">
+          <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:16px">Since your goals are already approved, you must request permission from your manager to modify them.</p>
+          <div class="form-group">
+            <label class="form-label">Reason for changes</label>
+            <textarea v-model="unlockReason" class="form-input" rows="3" placeholder="Explain why you need to edit your goals..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showUnlockModal = false">Cancel</button>
+          <button class="btn btn-primary" @click="requestUnlock" :disabled="!unlockReason.trim()">Submit Request</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -100,6 +129,7 @@ const statusLabel = computed(() => {
 })
 const canEdit = computed(() => ['draft', 'returned', 'none'].includes(gs.sheetStatus))
 const canSubmit = computed(() => ['draft', 'returned'].includes(gs.sheetStatus) && gs.totalWeightage === 100 && gs.goalCount <= 8 && gs.goalCount > 0)
+const isGoalSettingOpen = computed(() => gs.windows.some(w => w.phase === 'goal_setting' && w.status === 'active'))
 const sortedGoals = computed(() => {
   const g = [...gs.goals]
   if (sortBy.value === 'weightage') g.sort((a,b) => b.weightage - a.weightage)
@@ -117,6 +147,18 @@ async function deleteGoal(id) {
 async function submitSheet() {
   if (!confirm('Submit for approval? Goals will be locked.')) return
   try { await gs.submitSheet(gs.currentSheet.id); toast?.success('Goal sheet submitted!', '🚀 Submitted') } catch(e) { toast?.error(e.response?.data?.error || 'Submit failed') }
+}
+
+const showUnlockModal = ref(false)
+const unlockReason = ref('')
+import api from '../../services/api'
+async function requestUnlock() {
+  try {
+    const { data } = await api.post(`/employee/sheet/${gs.currentSheet.id}/request-unlock`, { reason: unlockReason.value })
+    gs.currentSheet = data.sheet
+    showUnlockModal.value = false
+    toast?.success('Unlock request submitted')
+  } catch(e) { toast?.error(e.response?.data?.error || 'Failed to request unlock') }
 }
 </script>
 

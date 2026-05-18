@@ -141,8 +141,32 @@ def delete_goal(goal_id):
     log_audit('goal', goal.id, 'deleted', user.id,
               old_values=goal.to_dict(), description=f'Goal "{goal.title}" deleted')
     db.session.delete(goal)
+    db.session.delete(goal)
     db.session.commit()
     return jsonify({'message': 'Goal deleted'}), 200
+
+
+@employee_bp.route('/sheet/<int:sheet_id>/request-unlock', methods=['POST'])
+@jwt_required()
+def request_unlock(sheet_id):
+    user = get_current_user()
+    sheet = GoalSheet.query.get_or_404(sheet_id)
+    if sheet.employee_id != user.id:
+        return jsonify({'error': 'Access denied'}), 403
+    if sheet.status != 'approved':
+        return jsonify({'error': 'Can only request unlock for approved sheets'}), 400
+    
+    data = request.get_json()
+    reason = data.get('reason')
+    if not reason:
+        return jsonify({'error': 'Reason is required'}), 400
+        
+    sheet.unlock_requested = True
+    sheet.unlock_reason = reason
+    sheet.unlock_feedback = None
+    db.session.commit()
+    log_audit('goal_sheet', sheet.id, 'unlock_requested', user.id, description='Requested goal changes')
+    return jsonify({'message': 'Unlock request submitted', 'sheet': sheet.to_dict()}), 200
 
 
 @employee_bp.route('/sheet/<int:sheet_id>/submit', methods=['POST'])
