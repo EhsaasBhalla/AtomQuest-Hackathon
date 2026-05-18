@@ -34,6 +34,13 @@ def create_app(config_class=Config):
 
     # Create tables
     with app.app_context():
+        import os
+        db_path = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+        if db_path.startswith('sqlite:///'):
+            # Extract the file path from the URI
+            file_path = db_path.replace('sqlite:///', '')
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            
         from app.models import user, goal, checkin, cycle, audit, escalation  # noqa
         db.create_all()
 
