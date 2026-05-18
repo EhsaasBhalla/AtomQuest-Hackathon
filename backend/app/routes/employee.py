@@ -22,9 +22,14 @@ def get_goal_sheet():
         return jsonify({'error': 'No active cycle found'}), 404
 
     sheet = GoalSheet.query.filter_by(employee_id=user.id, cycle_id=cycle_id).first()
+    
+    # Also fetch the cycle to get its windows
+    cycle_obj = Cycle.query.get(cycle_id)
+    windows = [w.to_dict() for w in cycle_obj.windows] if cycle_obj else []
+
     if not sheet:
-        return jsonify({'sheet': None, 'cycle_id': cycle_id}), 200
-    return jsonify({'sheet': sheet.to_dict(include_goals=True)}), 200
+        return jsonify({'sheet': None, 'cycle_id': cycle_id, 'windows': windows}), 200
+    return jsonify({'sheet': sheet.to_dict(include_goals=True), 'windows': windows}), 200
 
 
 @employee_bp.route('/sheet', methods=['POST'])

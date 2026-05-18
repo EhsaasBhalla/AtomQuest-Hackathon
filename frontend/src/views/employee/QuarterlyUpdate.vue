@@ -26,6 +26,12 @@
         <p style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">Provided on: {{ new Date(currentFeedback.checkin_date).toLocaleDateString() }}</p>
       </div>
 
+      <!-- Window Closed Alert -->
+      <div v-if="!isWindowOpen" class="card empty-state" style="margin-bottom:20px; padding: 20px; background: var(--bg-tertiary);">
+        <h3 style="color: var(--text-primary); margin-bottom: 4px;">🔒 Window Closed</h3>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">The {{ selectedQ.toUpperCase() }} check-in window is not currently open. You cannot save achievements right now.</p>
+      </div>
+
       <div v-for="g in gs.goals" :key="g.id" class="card" style="margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px">
           <div>
@@ -41,19 +47,19 @@
         <div v-if="achievements[g.id]" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:end">
           <div class="form-group" style="margin:0" v-if="g.uom_type !== 'timeline'">
             <label class="form-label">Actual Achievement</label>
-            <input v-model.number="achievements[g.id].actual_achievement" type="number" class="form-input" placeholder="Enter actual" />
+            <input v-model.number="achievements[g.id].actual_achievement" type="number" class="form-input" placeholder="Enter actual" :disabled="!isWindowOpen" />
           </div>
           <div class="form-group" style="margin:0" v-else>
             <label class="form-label">Completion Date</label>
-            <input v-model="achievements[g.id].actual_date" type="date" class="form-input" />
+            <input v-model="achievements[g.id].actual_date" type="date" class="form-input" :disabled="!isWindowOpen" />
           </div>
           <div class="form-group" style="margin:0">
             <label class="form-label">Status</label>
-            <select v-model="achievements[g.id].status" class="form-select">
+            <select v-model="achievements[g.id].status" class="form-select" :disabled="!isWindowOpen">
               <option value="not_started">Not Started</option><option value="on_track">On Track</option><option value="completed">Completed</option>
             </select>
           </div>
-          <button class="btn btn-primary" @click="saveAchievement(g)">💾 Save</button>
+          <button class="btn btn-primary" @click="saveAchievement(g)" :disabled="!isWindowOpen">💾 Save</button>
         </div>
         <div v-if="getScore(g)" style="margin-top:12px">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
@@ -80,6 +86,14 @@ const selectedQ = ref('q1')
 const currentFeedback = computed(() => {
   if (!gs.currentSheet || !gs.currentSheet.checkin_records) return null
   return gs.currentSheet.checkin_records.find(c => c.quarter === selectedQ.value)
+})
+
+const isWindowOpen = computed(() => {
+  if (!gs.windows || gs.windows.length === 0) return true // Fallback if no window data
+  const phaseMap = { 'q1': 'q1_checkin', 'q2': 'q2_checkin', 'q3': 'q3_checkin', 'q4': 'q4_annual' }
+  const phaseName = phaseMap[selectedQ.value]
+  const win = gs.windows.find(w => w.phase === phaseName)
+  return win ? win.is_open : false
 })
 
 const achievements = reactive({})

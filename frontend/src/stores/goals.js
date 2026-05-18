@@ -4,6 +4,7 @@ import api from '../services/api'
 export const useGoalStore = defineStore('goals', {
   state: () => ({
     currentSheet: null,
+    windows: [],
     loading: false,
     error: null,
   }),
@@ -24,6 +25,7 @@ export const useGoalStore = defineStore('goals', {
         const params = cycleId ? { cycle_id: cycleId } : {}
         const { data } = await api.get('/goals/sheet', { params })
         this.currentSheet = data.sheet
+        this.windows = data.windows || []
       } catch (e) {
         this.error = e.response?.data?.error || 'Failed to fetch goals'
       } finally {
