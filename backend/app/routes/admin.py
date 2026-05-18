@@ -14,12 +14,24 @@ admin_bp = Blueprint('admin', __name__)
 
 
 # --- Cycle Management ---
+def _bust_cycle_cache():
+    """Clear cached cycle data after any mutation."""
+    from app.extensions import cache
+    cache.delete('cycles_list')
+
+
 @admin_bp.route('/cycles', methods=['GET'])
 @jwt_required()
 @role_required('admin')
 def get_cycles():
+    from app.extensions import cache
+    cached = cache.get('cycles_list')
+    if cached:
+        return cached
     cycles = Cycle.query.order_by(Cycle.year.desc()).all()
-    return jsonify({'cycles': [c.to_dict(include_windows=True) for c in cycles]}), 200
+    result = jsonify({'cycles': [c.to_dict(include_windows=True) for c in cycles]}), 200
+    cache.set('cycles_list', result, timeout=3600)
+    return result
 
 
 @admin_bp.route('/cycles', methods=['POST'])
@@ -49,6 +61,7 @@ def create_cycle():
     db.session.commit()
     log_audit('cycle', cycle.id, 'created', user.id, description=f'Cycle "{cycle.name}" created')
     db.session.commit()
+    _bust_cycle_cache()
     return jsonify({'cycle': cycle.to_dict(include_windows=True)}), 201
 
 
@@ -65,6 +78,7 @@ def update_cycle(cycle_id):
         Cycle.query.filter(Cycle.id != cycle.id).update({Cycle.is_active: False})
         cycle.is_active = True
     db.session.commit()
+    _bust_cycle_cache()
     return jsonify({'cycle': cycle.to_dict(include_windows=True)}), 200
 
 
@@ -81,6 +95,7 @@ def update_windows(cycle_id):
             window.closes_at = date.fromisoformat(w_data['closes_at'])
             window.phase_label = w_data.get('phase_label', window.phase_label)
     db.session.commit()
+    _bust_cycle_cache()
     cycle = Cycle.query.get(cycle_id)
     return jsonify({'cycle': cycle.to_dict(include_windows=True)}), 200
 
@@ -102,6 +117,7 @@ def delete_cycle(cycle_id):
     db.session.commit()
     log_audit('cycle', cycle_id, 'deleted', user.id, description=f'Cycle "{cycle_name}" deleted')
     db.session.commit()
+    _bust_cycle_cache()
     return jsonify({'message': f'Cycle "{cycle_name}" deleted'}), 200
 
 
@@ -129,6 +145,8 @@ def create_user():
     user.set_password(data.get('password', 'password123'))
     db.session.add(user)
     db.session.commit()
+    from app.extensions import cache
+    cache.delete('register_metadata')
     return jsonify({'user': user.to_dict()}), 201
 
 
@@ -145,6 +163,8 @@ def update_user(user_id):
     user.designation = data.get('designation', user.designation)
     user.is_active = data.get('is_active', user.is_active)
     db.session.commit()
+    from app.extensions import cache
+    cache.delete('register_metadata')
     return jsonify({'user': user.to_dict()}), 200
 
 

@@ -83,19 +83,19 @@ def users_by_role():
 @auth_bp.route('/register-metadata', methods=['GET'])
 def get_register_metadata():
     from app.extensions import cache
+    cached = cache.get('register_metadata')
+    if cached:
+        return cached
+    from app.models.user import Department
+    departments = Department.query.all()
+    managers = User.query.filter(User.role.in_(['manager', 'admin']), User.is_active == True).all()
     
-    @cache.cached(timeout=3600)
-    def _get_metadata():
-        from app.models.user import Department
-        departments = Department.query.all()
-        managers = User.query.filter(User.role.in_(['manager', 'admin']), User.is_active == True).all()
-        
-        return jsonify({
-            'departments': [{'id': d.id, 'name': d.name} for d in departments],
-            'managers': [{'id': m.id, 'full_name': m.full_name} for m in managers]
-        }), 200
-        
-    return _get_metadata()
+    result = jsonify({
+        'departments': [{'id': d.id, 'name': d.name} for d in departments],
+        'managers': [{'id': m.id, 'full_name': m.full_name} for m in managers]
+    }), 200
+    cache.set('register_metadata', result, timeout=3600)
+    return result
 
 
 @auth_bp.route('/register', methods=['POST'])
