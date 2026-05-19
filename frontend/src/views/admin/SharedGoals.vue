@@ -87,9 +87,9 @@ const form = ref({ title:'', description:'', thrust_area:'Revenue Growth', uom_t
 
 onMounted(async () => {
   try {
-    const [sg, us] = await Promise.all([api.get('/shared-goals/'), api.get('/admin/users')])
+    const [sg, us] = await Promise.all([api.get('/shared-goals/'), api.get('/manager/team')])
     goals.value = sg.data.shared_goals
-    employees.value = us.data.users.filter(u => u.role === 'employee')
+    employees.value = us.data.team
   } finally { loading.value = false }
 })
 
