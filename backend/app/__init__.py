@@ -39,9 +39,18 @@ def create_app(config_class=Config):
         if db_path.startswith('sqlite:///'):
             # Extract the file path from the URI
             file_path = db_path.replace('sqlite:///', '')
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
-        from app.models import user, goal, checkin, cycle, audit, escalation  # noqa
+            dir_path = os.path.dirname(file_path)
+            if dir_path:
+                os.makedirs(dir_path, exist_ok=True)
+
+        from app.models import user, goal, checkin, cycle, audit, escalation, notification  # noqa
         db.create_all()
+
+        # Auto-seed demo data if the database is fresh (no users exist yet)
+        from app.models.user import User
+        if User.query.first() is None:
+            print("[AUTO-SEED] Fresh database detected — seeding demo data...")
+            from app.seed import seed_all
+            seed_all()
 
     return app

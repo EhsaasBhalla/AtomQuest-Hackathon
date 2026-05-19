@@ -6,10 +6,14 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'atomquest-hackathon-secret-key-2026')
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL',
-        'sqlite:///' + os.path.join(basedir, '..', 'instance', 'goaltracker.db')
-    )
+    # Auto-detect Railway Persistent Volume
+    railway_volume = os.environ.get('RAILWAY_VOLUME_MOUNT_PATH')
+    if railway_volume:
+        default_db_uri = 'sqlite:///' + os.path.join(railway_volume, 'goaltracker.db')
+    else:
+        default_db_uri = 'sqlite:///' + os.path.join(basedir, '..', 'instance', 'goaltracker.db')
+
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', default_db_uri)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-atomquest-secret-2026')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
