@@ -68,6 +68,11 @@ def push_shared_goal(sg_id):
             sheet = GoalSheet(employee_id=emp_id, cycle_id=sg.cycle_id, status='draft')
             db.session.add(sheet)
             db.session.flush()
+        elif sheet.status == 'approved':
+            # HR Logic: If sheet is already approved, adding a shared goal forces weightage > 100%
+            # Revert to draft so the employee can re-balance weightages to 100%.
+            sheet.status = 'draft'
+            sheet.unlock_reason = "System: A new mandatory shared goal was pushed. Please re-balance your weightages to 100% and resubmit."
 
         # Create goal in employee's sheet
         goal = Goal(
