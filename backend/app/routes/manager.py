@@ -85,10 +85,18 @@ def resolve_unlock(employee_id):
         sheet.unlock_requested = False
         sheet.unlock_feedback = feedback
         log_audit('goal_sheet', sheet.id, 'unlock_accepted', user.id, description='Unlock request approved')
+        
+        from app.models.notification import create_notification
+        create_notification(sheet.employee_id, f"Your unlock request was approved. You can now edit your goals. Feedback: {feedback}", "✅", link="/goals")
+        
     elif action == 'reject':
         sheet.unlock_requested = False
         sheet.unlock_feedback = feedback
         log_audit('goal_sheet', sheet.id, 'unlock_rejected', user.id, description='Unlock request rejected')
+        
+        from app.models.notification import create_notification
+        create_notification(sheet.employee_id, f"Your unlock request was declined. Feedback: {feedback}", "❌", link="/goals")
+        
     else:
         return jsonify({'error': 'Invalid action'}), 400
         

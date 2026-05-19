@@ -166,6 +166,12 @@ def request_unlock(sheet_id):
     sheet.unlock_feedback = None
     db.session.commit()
     log_audit('goal_sheet', sheet.id, 'unlock_requested', user.id, description='Requested goal changes')
+    
+    from app.models.notification import create_notification
+    if user.manager_id:
+        link = f"/team/{user.id}/review"
+        create_notification(user.manager_id, f"{user.full_name} has requested an unlock for their goal sheet. Reason: {reason}", "🔓", link=link)
+
     return jsonify({'message': 'Unlock request submitted', 'sheet': sheet.to_dict()}), 200
 
 
@@ -196,6 +202,11 @@ def submit_sheet(sheet_id):
     sheet.status = 'submitted'
     sheet.submitted_at = datetime.now(timezone.utc)
     sheet.return_comment = None
+    
+    # Clear unlock flags since the sheet is now re-submitted
+    sheet.unlock_requested = False
+    sheet.unlock_reason = None
+    sheet.unlock_feedback = None
     db.session.commit()
     log_audit('goal_sheet', sheet.id, 'submitted', user.id, description='Goal sheet submitted for approval')
     if user.manager_id:
