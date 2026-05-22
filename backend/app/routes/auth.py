@@ -92,7 +92,7 @@ def get_register_metadata():
     
     result = jsonify({
         'departments': [{'id': d.id, 'name': d.name} for d in departments],
-        'managers': [{'id': m.id, 'full_name': m.full_name} for m in managers]
+        'managers': [{'id': m.id, 'full_name': m.full_name, 'department_id': m.department_id} for m in managers]
     }), 200
     cache.set('register_metadata', result, timeout=3600)
     return result

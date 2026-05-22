@@ -42,9 +42,9 @@
           </div>
           <div class="form-group">
             <label class="form-label">Manager</label>
-            <select v-model="form.manager_id" class="form-input" required>
-              <option value="" disabled>Select Manager</option>
-              <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.full_name }}</option>
+            <select v-model="form.manager_id" class="form-input" required :disabled="!form.department_id">
+              <option value="" disabled>{{ form.department_id ? 'Select Manager' : 'Select a department first' }}</option>
+              <option v-for="m in filteredManagers" :key="m.id" :value="m.id">{{ m.full_name }}</option>
             </select>
           </div>
         </div>
@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
 
@@ -83,6 +83,17 @@ const form = ref({
   confirm: '',
   department_id: '',
   manager_id: ''
+})
+
+// Filter managers by the selected department
+const filteredManagers = computed(() => {
+  if (!form.value.department_id) return []
+  return managers.value.filter(m => m.department_id === form.value.department_id)
+})
+
+// Reset manager selection when department changes
+watch(() => form.value.department_id, () => {
+  form.value.manager_id = ''
 })
 
 onMounted(async () => {
