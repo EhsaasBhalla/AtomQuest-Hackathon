@@ -18,7 +18,7 @@ def get_team():
     user = get_current_user()
     # Admin sees all employees; managers see only direct reports
     if user.role == 'admin':
-        reports = User.query.filter_by(role='employee', is_active=True).all()
+        reports = User.query.filter(User.role.in_(['employee', 'manager']), User.is_active==True).all()
     else:
         reports = User.query.filter_by(manager_id=user.id, is_active=True).all()
     cycle_id = request.args.get('cycle_id', type=int)

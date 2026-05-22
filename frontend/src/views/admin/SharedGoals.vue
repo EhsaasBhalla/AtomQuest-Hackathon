@@ -57,14 +57,20 @@
         <div class="modal-body">
           <p style="font-size:0.85rem;margin-bottom:12px;color:var(--text-secondary)">Select employees to receive this shared goal:</p>
           <div v-for="u in employees" :key="u.id" class="push-item">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-              <input type="checkbox" v-model="selectedEmps" :value="u.id" />
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer" :style="{ opacity: pushTarget?.pushed_to?.includes(u.id) ? '0.6' : '1' }">
+              <input type="checkbox" v-model="selectedEmps" :value="u.id" :disabled="pushTarget?.pushed_to?.includes(u.id)" />
               <div class="avatar" style="width:28px;height:28px;font-size:0.65rem" :style="{background:u.avatar_color}">{{ u.full_name?.charAt(0) }}</div>
-              <div><strong style="font-size:0.82rem">{{ u.full_name }}</strong><div style="font-size:0.72rem;color:var(--text-muted)">{{ u.email }}</div></div>
+              <div style="flex: 1">
+                <div style="display:flex; align-items:center; gap:8px">
+                  <strong style="font-size:0.82rem">{{ u.full_name }}</strong>
+                  <span v-if="pushTarget?.pushed_to?.includes(u.id)" class="badge badge-success" style="font-size: 0.6rem; padding: 2px 6px">Already Pushed</span>
+                </div>
+                <div style="font-size:0.72rem;color:var(--text-muted)">{{ u.email }}</div>
+              </div>
             </label>
           </div>
         </div>
-        <div class="modal-footer"><button class="btn btn-secondary" @click="showPush = false">Cancel</button><button class="btn btn-primary" @click="pushGoal" :disabled="!selectedEmps.length">Push to {{ selectedEmps.length }} employees</button></div>
+        <div class="modal-footer"><button class="btn btn-secondary" @click="showPush = false">Cancel</button><button class="btn btn-primary" @click="pushGoal" :disabled="selectedEmps.length === (pushTarget?.pushed_to?.length || 0)">Push to New Employees</button></div>
       </div>
     </div>
   </div>
@@ -103,15 +109,21 @@ async function createGoal() {
   } catch(e) { toast?.error(e.response?.data?.error || 'Failed') }
 }
 
-function openPush(sg) { pushTarget.value = sg; selectedEmps.value = []; showPush.value = true }
+function openPush(sg) { 
+  pushTarget.value = sg; 
+  // Automatically select employees who already received it so checkboxes show as checked
+  selectedEmps.value = [...(sg.pushed_to || [])]; 
+  showPush.value = true; 
+}
 
 async function pushGoal() {
   try {
-    await api.post(`/shared-goals/${pushTarget.value.id}/push`, { employee_ids: selectedEmps.value })
+    const newPushes = selectedEmps.value.filter(id => !(pushTarget.value.pushed_to || []).includes(id))
+    await api.post(`/shared-goals/${pushTarget.value.id}/push`, { employee_ids: newPushes })
     showPush.value = false
     const { data } = await api.get('/shared-goals/')
     goals.value = data.shared_goals
-    toast?.success(`Pushed to ${selectedEmps.value.length} employees!`)
+    toast?.success(`Pushed to ${newPushes.length} new employees!`)
   } catch(e) { toast?.error(e.response?.data?.error || 'Failed') }
 }
 </script>

@@ -152,6 +152,7 @@ class SharedGoalMaster(db.Model):
             'department_name': self.department.name if self.department else None,
             'cycle_id': self.cycle_id,
             'recipient_count': self.recipients.count(),
+            'pushed_to': [r.employee_id for r in self.recipients],
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 

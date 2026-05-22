@@ -13,11 +13,14 @@ shared_goals_bp = Blueprint('shared_goals', __name__)
 @jwt_required()
 @role_required('admin', 'manager')
 def list_shared_goals():
+    user = get_current_user()
     cycle_id = request.args.get('cycle_id', type=int)
     if not cycle_id:
         cycle = Cycle.query.filter_by(is_active=True).first()
         cycle_id = cycle.id if cycle else None
-    goals = SharedGoalMaster.query.filter_by(cycle_id=cycle_id).all() if cycle_id else []
+        
+    # User requirement: A shared goal created by a manager/admin should only be seen/edited by them
+    goals = SharedGoalMaster.query.filter_by(cycle_id=cycle_id, created_by=user.id).all() if cycle_id else []
     return jsonify({'shared_goals': [g.to_dict() for g in goals]}), 200
 
 
@@ -62,19 +65,15 @@ def push_shared_goal(sg_id):
         if existing:
             continue
 
-        # Get or create goal sheet
         sheet = GoalSheet.query.filter_by(employee_id=emp_id, cycle_id=sg.cycle_id).first()
         if not sheet:
             sheet = GoalSheet(employee_id=emp_id, cycle_id=sg.cycle_id, status='draft')
             db.session.add(sheet)
             db.session.flush()
         elif sheet.status == 'approved':
-            # HR Logic: If sheet is already approved, adding a shared goal forces weightage > 100%
-            # Revert to draft so the employee can re-balance weightages to 100%.
             sheet.status = 'draft'
             sheet.unlock_reason = "System: A new mandatory shared goal was pushed. Please re-balance your weightages to 100% and resubmit."
 
-        # Create goal in employee's sheet
         goal = Goal(
             goal_sheet_id=sheet.id, thrust_area=sg.thrust_area,
             title=sg.title, description=sg.description,
