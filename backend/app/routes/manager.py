@@ -16,11 +16,9 @@ manager_bp = Blueprint('manager', __name__)
 @role_required('manager', 'admin')
 def get_team():
     user = get_current_user()
-    # Admin sees all employees & managers; managers see only their department's direct reports
     if user.role == 'admin':
         reports = User.query.filter(User.role.in_(['employee', 'manager']), User.is_active==True).all()
     else:
-        # Manager sees only direct reports within their own department
         reports = User.query.filter_by(manager_id=user.id, is_active=True).all()
         if user.department_id:
             reports = [r for r in reports if r.department_id == user.department_id]

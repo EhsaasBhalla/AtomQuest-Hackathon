@@ -19,7 +19,6 @@ def list_shared_goals():
         cycle = Cycle.query.filter_by(is_active=True).first()
         cycle_id = cycle.id if cycle else None
         
-    # User requirement: A shared goal created by a manager/admin should only be seen/edited by them
     goals = SharedGoalMaster.query.filter_by(cycle_id=cycle_id, created_by=user.id).all() if cycle_id else []
     return jsonify({'shared_goals': [g.to_dict() for g in goals]}), 200
 
