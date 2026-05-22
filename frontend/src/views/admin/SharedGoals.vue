@@ -54,20 +54,26 @@
     <div v-if="showPush" class="modal-overlay" @click.self="showPush = false">
       <div class="modal">
         <div class="modal-header"><h3>Push: {{ pushTarget?.title }}</h3><button class="btn btn-ghost btn-sm" @click="showPush = false">✕</button></div>
-        <div class="modal-body">
+        <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
           <p style="font-size:0.85rem;margin-bottom:12px;color:var(--text-secondary)">Select employees to receive this shared goal:</p>
-          <div v-for="u in employees" :key="u.id" class="push-item">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer" :style="{ opacity: pushTarget?.pushed_to?.includes(u.id) ? '0.6' : '1' }">
-              <input type="checkbox" v-model="selectedEmps" :value="u.id" :disabled="pushTarget?.pushed_to?.includes(u.id)" />
-              <div class="avatar" style="width:28px;height:28px;font-size:0.65rem" :style="{background:u.avatar_color}">{{ u.full_name?.charAt(0) }}</div>
-              <div style="flex: 1">
-                <div style="display:flex; align-items:center; gap:8px">
-                  <strong style="font-size:0.82rem">{{ u.full_name }}</strong>
-                  <span v-if="pushTarget?.pushed_to?.includes(u.id)" class="badge badge-success" style="font-size: 0.6rem; padding: 2px 6px">Already Pushed</span>
-                </div>
-                <div style="font-size:0.72rem;color:var(--text-muted)">{{ u.email }}</div>
+          <div v-for="(mgrs, deptName) in groupedEmployees" :key="deptName" style="margin-bottom: 20px;">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:8px; border-bottom:2px solid var(--border-light); padding-bottom:6px;">{{ deptName }}</div>
+            <div v-for="(emps, mgrName) in mgrs" :key="mgrName" style="margin-left: 8px; margin-bottom: 12px;">
+              <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Reporting to: {{ mgrName }}</div>
+              <div v-for="u in emps" :key="u.id" class="push-item" style="margin-left: 8px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer" :style="{ opacity: pushTarget?.pushed_to?.includes(u.id) ? '0.6' : '1' }">
+                  <input type="checkbox" v-model="selectedEmps" :value="u.id" :disabled="pushTarget?.pushed_to?.includes(u.id)" />
+                  <div class="avatar" style="width:28px;height:28px;font-size:0.65rem" :style="{background:u.avatar_color}">{{ u.full_name?.charAt(0) }}</div>
+                  <div style="flex: 1">
+                    <div style="display:flex; align-items:center; gap:8px">
+                      <strong style="font-size:0.82rem">{{ u.full_name }}</strong>
+                      <span v-if="pushTarget?.pushed_to?.includes(u.id)" class="badge badge-success" style="font-size: 0.6rem; padding: 2px 6px">Already Pushed</span>
+                    </div>
+                    <div style="font-size:0.72rem;color:var(--text-muted);text-transform:capitalize;">{{ u.role }} &bull; {{ u.email }}</div>
+                  </div>
+                </label>
               </div>
-            </label>
+            </div>
           </div>
         </div>
         <div class="modal-footer"><button class="btn btn-secondary" @click="showPush = false">Cancel</button><button class="btn btn-primary" @click="pushGoal" :disabled="selectedEmps.length === (pushTarget?.pushed_to?.length || 0)">Push to New Employees</button></div>
@@ -77,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, inject } from 'vue'
+import { ref, onMounted, inject, computed } from 'vue'
 import api from '../../services/api'
 
 const toast = inject('toast')
@@ -90,6 +96,18 @@ const pushTarget = ref(null)
 const selectedEmps = ref([])
 const areas = ['Revenue Growth','Customer Satisfaction','Product Quality','Innovation','Operational Excellence','People Development']
 const form = ref({ title:'', description:'', thrust_area:'Revenue Growth', uom_type:'numeric_min', target_value:null })
+
+const groupedEmployees = computed(() => {
+  const groups = {}
+  employees.value.forEach(emp => {
+    const dept = emp.department_name || 'Unassigned Department'
+    const mgr = emp.manager_name || 'No Manager'
+    if (!groups[dept]) groups[dept] = {}
+    if (!groups[dept][mgr]) groups[dept][mgr] = []
+    groups[dept][mgr].push(emp)
+  })
+  return groups
+})
 
 onMounted(async () => {
   try {
